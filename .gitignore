@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local runtime state
+/chroma/
+/chats/
+/data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Local models / caches
+/models/
+*.gguf
+*.gguf.*
+.cache/
+.huggingface/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Logs / temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Local OS artifacts
+.directory

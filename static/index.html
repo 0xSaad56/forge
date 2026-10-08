@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Forge</title>
+<script src="/static/vendor/md-fallback.js"></script>
+<script src="/static/vendor/marked.min.js"></script>
+<script src="/static/vendor/purify.min.js"></script>
+<style>
+:root{
+  --bg:#050608;--bg2:#080b0e;--panel:#0b0f13;--panel2:#0e1318;
+  --line:rgba(255,255,255,.075);--line2:rgba(255,255,255,.13);
+  --text:#eef2f5;--muted:#8d98a3;--dim:#59636d;--white:#f7f9fb;
+  --ok:#35e3a0;--danger:#ff6675;--accent:#c9d7e4;
+  --font:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  font-family:var(--font);background:
+  radial-gradient(900px 600px at 80% -10%,rgba(164,191,216,.08),transparent 62%),
+  radial-gradient(700px 500px at -15% 100%,rgba(110,138,165,.045),transparent 65%),var(--bg);
+  color:var(--text);display:grid;grid-template-columns:310px minmax(0,1fr);
+  overflow:hidden;-webkit-font-smoothing:antialiased;
+}
+button,textarea,input{font:inherit;color:inherit}button{cursor:pointer;border:none;background:none}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid rgba(205,220,234,.45);outline-offset:2px}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#29323b;border-radius:99px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-track{background:transparent}
+
+/* COLLAPSE: CSS only. Existing application JS remains untouched. */
+#sidebarToggle{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.sidebar-toggle{
+  position:absolute;right:-14px;top:18px;width:28px;height:28px;z-index:20;
+  display:grid;place-items:center;border:1px solid rgba(255,255,255,.12);
+  border-radius:9px;background:linear-gradient(145deg,#151b21,#0a0e12);
+  box-shadow:0 8px 24px rgba(0,0,0,.45),inset 0 1px rgba(255,255,255,.06);
+  color:#9aa6b0;transition:.2s;cursor:pointer;
+}
+.sidebar-toggle:hover{color:#eef3f7;border-color:rgba(220,231,240,.24);transform:translateY(-1px)}
+.sidebar-toggle svg{width:14px;height:14px;transition:transform .25s ease}
+body:has(#sidebarToggle:checked){grid-template-columns:76px minmax(0,1fr)}
+body:has(#sidebarToggle:checked) .sidebar{overflow:visible}
+body:has(#sidebarToggle:checked) .sidebar .brand{justify-content:center;margin-bottom:18px}
+body:has(#sidebarToggle:checked) .brand-text,
+body:has(#sidebarToggle:checked) .brand-sub,
+body:has(#sidebarToggle:checked) .btn-primary,
+body:has(#sidebarToggle:checked) .search-wrap,
+body:has(#sidebarToggle:checked) .chat-list,
+body:has(#sidebarToggle:checked) .side-foot{display:none}
+body:has(#sidebarToggle:checked) .side-top{padding:18px 12px}
+body:has(#sidebarToggle:checked) .sidebar-toggle svg{transform:rotate(180deg)}
+
+/* SIDEBAR */
+.sidebar{
+  position:relative;min-height:0;display:flex;flex-direction:column;
+  background:linear-gradient(180deg,rgba(10,13,16,.98),rgba(5,7,9,.99));
+  border-right:1px solid var(--line);box-shadow:16px 0 55px rgba(0,0,0,.22);
+}
+.sidebar::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,rgba(255,255,255,.025),transparent 18%,transparent 85%,rgba(255,255,255,.01)),
+  repeating-linear-gradient(0deg,transparent 0 32px,rgba(255,255,255,.01) 33px);
+}
+.sidebar::after{
+  content:"";position:absolute;width:420px;height:420px;left:-270px;top:-190px;
+  background:radial-gradient(circle,rgba(174,199,222,.065),transparent 67%);
+  filter:blur(12px);pointer-events:none;
+}
+.side-top{padding:20px 16px 13px;position:relative;z-index:2}
+.brand{display:flex;align-items:center;gap:11px;margin-bottom:16px;transition:.2s}
+.brand-mark{
+  width:36px;height:36px;border-radius:11px;display:grid;place-items:center;
+  background:linear-gradient(145deg,#f5f8fb,#9caab7 52%,#46515c);color:#071018;
+  font-weight:800;font-size:11px;box-shadow:0 0 0 1px rgba(255,255,255,.14),0 10px 26px rgba(0,0,0,.42);
+  flex:0 0 auto;
+}
+.brand-text{font-size:13px;font-weight:700;letter-spacing:-.025em}
+.brand-sub{font-size:9.5px;color:#5f6a74;margin-top:3px;white-space:nowrap}
+.btn-primary{
+  width:100%;padding:11px 13px;border-radius:11px;background:linear-gradient(180deg,#f3f6f8,#d2dae1);
+  color:#080b0e;font-size:12px;font-weight:700;box-shadow:0 9px 27px rgba(0,0,0,.34),inset 0 1px rgba(255,255,255,.8);
+  transition:.16s;
+}
+.btn-primary:hover{transform:translateY(-1px)}.btn-primary:active{transform:scale(.985)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.search-wrap{padding:1px 12px 9px;position:relative;z-index:2}
+.search-wrap input{
+  width:100%;height:37px;background:rgba(255,255,255,.032);border:1px solid var(--line);
+  border-radius:10px;padding:8px 11px 8px 34px;font-size:11.5px;outline:none;transition:.16s;
+}
+.search-wrap input::placeholder{color:#59646e}
+.search-wrap input:focus{border-color:rgba(205,220,234,.23);background:rgba(255,255,255,.05);box-shadow:0 0 0 4px rgba(180,204,225,.035)}
+.search-wrap svg{position:absolute;left:23px;top:50%;transform:translateY(-50%);width:14px;height:14px;opacity:.45}
+.chat-list{flex:1;overflow-y:auto;padding:3px 9px 11px;position:relative;z-index:2}
+.section-label{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#56616b;padding:12px 8px 6px}
+.chat-item{
+  position:relative;width:100%;text-align:left;padding:10px 11px;border-radius:11px;margin-bottom:3px;
+  border:1px solid transparent;transition:.15s;overflow:hidden;
+}
+.chat-item:hover{background:rgba(255,255,255,.035);border-color:rgba(255,255,255,.045)}
+.chat-item.active{background:linear-gradient(90deg,rgba(180,205,227,.085),rgba(255,255,255,.025));border-color:rgba(210,225,238,.1)}
+.chat-item.active::before{
+  content:"";position:absolute;left:0;top:8px;bottom:8px;width:2px;background:#c9d8e5;
+  box-shadow:0 0 12px rgba(201,216,229,.55);border-radius:2px;
+}
+.chat-item .title{font-size:12px;font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-item .meta{display:flex;justify-content:space-between;font-size:9.5px;color:#59646e;margin-top:4px}
+.side-foot{padding:12px 13px 15px;border-top:1px solid var(--line);position:relative;z-index:2}
+.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:9px}
+.stat-card{background:linear-gradient(145deg,rgba(255,255,255,.04),rgba(255,255,255,.016));border:1px solid var(--line);border-radius:10px;padding:9px}
+.stat-card .k{font-size:8.5px;color:#56616b;text-transform:uppercase;letter-spacing:.09em}
+.stat-card .v{margin-top:5px;font-size:9.5px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.dot{width:6px;height:6px;border-radius:50%;background:#39434c;flex-shrink:0}
+.dot.on{background:var(--ok);box-shadow:0 0 0 3px rgba(53,227,160,.08),0 0 12px rgba(53,227,160,.55)}
+.foot-note{font-size:9.5px;color:#53606a;line-height:1.45}
+
+/* MAIN */
+.workspace{
+  display:flex;flex-direction:column;min-width:0;min-height:0;position:relative;
+  background:radial-gradient(900px 500px at 80% -10%,rgba(174,200,223,.05),transparent 62%),
+  radial-gradient(700px 500px at 45% 110%,rgba(95,125,151,.025),transparent 65%);
+}
+.workspace::before{
+  content:"";position:absolute;inset:58px 0 0;pointer-events:none;opacity:.28;
+  background-image:linear-gradient(rgba(255,255,255,.016) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.011) 1px,transparent 1px);
+  background-size:70px 70px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.7),transparent 78%);
+}
+.topbar{
+  height:58px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;
+  padding:0 22px;backdrop-filter:blur(22px);background:rgba(4,6,8,.75);position:relative;z-index:5;
+}
+.topbar h1{margin:0;font-size:12px;font-weight:600;color:#aeb8c1;max-width:55vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar h1::before{content:"/";color:#505b65;margin-right:7px}
+.top-actions{display:flex;gap:7px;align-items:center}
+.btn-ghost{
+  padding:7px 10px;border-radius:9px;font-size:10px;color:#808b96;border:1px solid var(--line);
+  background:rgba(255,255,255,.015);transition:.15s;
+}
+.btn-ghost:hover{border-color:var(--line2);color:#e0e6eb;background:rgba(255,255,255,.05);transform:translateY(-1px)}
+.btn-ghost:disabled{opacity:.45;cursor:wait;transform:none}
+.scroll{flex:1;overflow-y:auto;padding:35px 26px 22px;position:relative;z-index:1;scroll-behavior:smooth}
+.thread{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.hero{text-align:center;max-width:690px;margin:8vh auto 0;animation:fadeUp .55s cubic-bezier(.16,1,.3,1)}
+.hero::before{
+  content:"FORGE";display:inline-flex;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.075);
+  background:rgba(255,255,255,.022);color:#606b75;font:600 8.5px var(--mono);letter-spacing:.17em;margin-bottom:18px;
+}
+.hero h2{margin:0 0 11px;font-size:clamp(29px,4vw,46px);line-height:1.04;font-weight:650;letter-spacing:-.055em;color:#f2f5f7}
+.hero p{max-width:600px;margin:0 auto 25px;font-size:12.5px;line-height:1.75;color:#7f8a95}
+.chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.chip{
+  min-height:64px;padding:10px 12px;border-radius:12px;text-align:left;border:1px solid var(--line);color:#87929d;
+  background:linear-gradient(145deg,rgba(255,255,255,.04),rgba(255,255,255,.015));transition:.18s;
+}
+.chip::before{content:"↗";display:block;color:#59656f;font-size:11px;margin-bottom:7px}
+.chip:hover{transform:translateY(-2px);color:#dfe6eb;border-color:rgba(211,226,239,.17);background:linear-gradient(145deg,rgba(175,202,225,.07),rgba(255,255,255,.02));box-shadow:0 15px 32px rgba(0,0,0,.25)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.msg{display:flex;flex-direction:column;gap:7px;animation:fadeUp .22s ease}
+.msg.user{align-items:flex-end}.msg.bot{align-items:flex-start}
+.msg .role{font-size:9px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#59646e;padding:0 4px}
+.bubble{
+  border:1px solid var(--line);border-radius:16px;padding:14px 16px;font-size:13.5px;line-height:1.7;
+  max-width:100%;box-shadow:0 18px 55px rgba(0,0,0,.26);position:relative;overflow:hidden;
+}
+.bubble::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(120deg,rgba(255,255,255,.025),transparent 32%,transparent 70%,rgba(255,255,255,.01))}
+.msg.user .bubble{background:linear-gradient(145deg,#20272e,#151a1f);max-width:78%;border-color:rgba(208,223,236,.11)}
+.msg.bot .bubble{background:linear-gradient(145deg,#0f1418,#090c0f);width:100%}
+.md{position:relative;z-index:1}.md p{margin:0 0 .7em}.md p:last-child{margin-bottom:0}
+.md ul,.md ol{margin:.45em 0;padding-left:1.3em}.md li{margin:.28em 0}.md strong{font-weight:650;color:#f5f7f9}.md a{color:#d4e1ec}
+.md code{font-family:var(--mono);font-size:11.5px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.04);padding:2px 6px;border-radius:6px;color:#d7e2eb}
+.md pre{margin:.8em 0;padding:15px 16px;background:#050709;border:1px solid var(--line);border-radius:11px;overflow-x:auto}
+.md pre code{background:none;border:0;padding:0;color:#c7d1da;font-size:11.5px;line-height:1.6}
+.md h1,.md h2,.md h3{margin:.9em 0 .4em;font-size:15px;font-weight:650;color:#f2f5f7}
+.md blockquote{margin:.6em 0;padding:8px 12px;border-left:2px solid #4d5964;color:#929da7;background:rgba(255,255,255,.02)}
+.msg-foot{display:flex;gap:8px;align-items:center;font-size:9.5px;color:#56616b;padding:0 4px}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
+.badge.ok{border-color:rgba(53,227,160,.2);color:var(--ok);background:rgba(53,227,160,.04)}
+.badge.ok::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--ok);box-shadow:0 0 9px rgba(53,227,160,.7)}
+
+/* COMPOSER */
+.dock{border-top:1px solid var(--line);background:rgba(4,6,8,.82);backdrop-filter:blur(28px);padding:14px 22px 20px;position:relative;z-index:5}
+.dock-inner{max-width:880px;margin:0 auto}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;font-size:9.5px;color:#5d6872}
+.tools label{display:inline-flex;gap:7px;align-items:center;cursor:pointer;padding:5px 9px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.022);color:#858f99;transition:.15s}
+.tools label:hover{border-color:var(--line2);color:#c1cbd3}.tools input{accent-color:#cbd8e3}
+.dock{position:relative}
+.dock::before{
+  content:"";position:absolute;left:10%;right:10%;top:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(200,220,240,.22),transparent);
+  opacity:.9;pointer-events:none;
+}
+.composer{
+  position:relative;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;
+  background:linear-gradient(155deg,rgba(22,28,34,.97),rgba(8,11,14,.99));
+  border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:12px 12px 12px 16px;
+  box-shadow:0 22px 70px rgba(0,0,0,.45),inset 0 1px rgba(255,255,255,.05);
+  transition:border-color .25s ease, box-shadow .3s ease, transform .25s ease;
+  overflow:hidden;
+}
+.composer::before{
+  content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;
+  background:linear-gradient(120deg,rgba(255,255,255,.14),transparent 35%,transparent 65%,rgba(160,200,240,.1));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;opacity:.55;
+  transition:opacity .3s ease;
+}
+.composer::after{
+  content:"";position:absolute;width:180px;height:180px;right:-40px;bottom:-60px;
+  background:radial-gradient(circle,rgba(180,210,240,.08),transparent 70%);
+  pointer-events:none;transition:opacity .35s ease, transform .5s ease;
+}
+.composer:focus-within{
+  border-color:rgba(210,228,245,.28);
+  transform:translateY(-1px);
+  box-shadow:0 0 0 1px rgba(190,215,240,.08),0 0 0 6px rgba(160,195,230,.04),0 28px 80px rgba(0,0,0,.5),inset 0 1px rgba(255,255,255,.06);
+}
+.composer:focus-within::before{opacity:1}
+.composer:focus-within::after{opacity:1;transform:scale(1.15)}
+.composer.sending{animation:composerPulse 1.1s ease-in-out infinite}
+@keyframes composerPulse{
+  0%,100%{box-shadow:0 22px 70px rgba(0,0,0,.45),inset 0 1px rgba(255,255,255,.05)}
+  50%{box-shadow:0 22px 70px rgba(0,0,0,.45),0 0 0 1px rgba(200,220,240,.12),inset 0 1px rgba(255,255,255,.07)}
+}
+.composer-meta{
+  position:absolute;left:16px;right:110px;bottom:8px;display:flex;justify-content:space-between;
+  pointer-events:none;opacity:0;transform:translateY(4px);
+  transition:opacity .22s ease, transform .22s ease;font-size:9px;color:#5a6570;
+}
+.composer:focus-within .composer-meta{opacity:1;transform:translateY(0)}
+textarea{
+  width:100%;resize:none;min-height:48px;max-height:200px;background:transparent;border:none;outline:none;
+  line-height:1.55;padding:10px 0 18px;font-size:13.5px;caret-color:#d8e4ef;
+  transition:min-height .2s ease;
+}
+textarea::placeholder{color:#55616c;transition:color .2s ease, opacity .2s ease}
+.composer:focus-within textarea::placeholder{color:#6a7682;opacity:.85}
+.actions{display:flex;gap:8px;align-items:center;padding-bottom:2px}
+.btn-send,.btn-stop{
+  height:42px;padding:0 16px;border-radius:12px;font-size:11px;font-weight:700;min-width:82px;
+  transition:transform .18s cubic-bezier(.16,1,.3,1), opacity .18s ease, box-shadow .22s ease, background .2s ease;
+  letter-spacing:.02em;
+}
+.btn-send{
+  background:linear-gradient(180deg,#f7fafc,#cfd8e0);color:#0a0d10;
+  box-shadow:0 10px 28px rgba(0,0,0,.35),inset 0 1px rgba(255,255,255,.85);
+}
+.btn-send:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(0,0,0,.4),inset 0 1px rgba(255,255,255,.9)}
+.btn-send:active{transform:translateY(0) scale(.98)}
+.btn-send:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-stop{
+  display:none;background:rgba(255,102,117,.06);color:#ff9aa3;border:1px solid rgba(255,102,117,.22);
+}
+.btn-stop:hover{border-color:rgba(255,102,117,.45);background:rgba(255,102,117,.1);transform:translateY(-1px)}
+.btn-stop.show{display:inline-flex;align-items:center;justify-content:center;animation:fadeInBtn .2s ease}
+.btn-send.hide{display:none}
+@keyframes fadeInBtn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+.temp-label{display:inline-flex!important;align-items:center;gap:6px;font-size:9.5px;color:#858f99}
+#presetSel{background:#12171c;border:1px solid rgba(255,255,255,.12);color:#c5d0d9;border-radius:6px;padding:2px 6px;font-size:10px}
+.temp-label input[type=range]{width:72px;accent-color:#b8c8d6;vertical-align:middle}
+#tempVal{font-family:var(--mono);font-size:9px;color:#9aa6b0;min-width:28px}
+pre{position:relative}
+.copy-btn{position:absolute;top:8px;right:8px;font-size:9px;padding:4px 8px;border-radius:6px;
+border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.45);color:#c5d0d9;cursor:pointer;opacity:0;transition:.15s}
+pre:hover .copy-btn{opacity:1}
+.copy-btn:hover{border-color:rgba(255,255,255,.25);color:#fff}
+.kbd{font-family:var(--mono);font-size:9px;border:1px solid var(--line);border-radius:5px;padding:2px 5px;color:#616c76;background:rgba(255,255,255,.018)}
+.toast{
+  position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(16,20,24,.95);
+  backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.12);color:#e8edf1;padding:10px 15px;border-radius:10px;
+  font-size:10.5px;opacity:0;pointer-events:none;transition:.25s;z-index:50;box-shadow:0 18px 55px rgba(0,0,0,.45)
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:1050px){body{grid-template-columns:285px minmax(0,1fr)}.chips{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:860px){body{grid-template-columns:1fr}.sidebar{display:none}.msg.user .bubble{max-width:100%}.topbar{padding:0 16px}.scroll{padding:28px 16px 18px}.dock{padding:10px 14px 15px}.thread,.dock-inner{max-width:none}}
+@media(max-width:560px){.chips{grid-template-columns:1fr}.top-actions .btn-ghost:nth-child(2){display:none}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+
+</head>
+<body>
+<aside class="sidebar">
+    <input type="checkbox" id="sidebarToggle" aria-label="Collapse sidebar" />
+    <label class="sidebar-toggle" for="sidebarToggle" title="Collapse / expand sidebar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="m15 18-6-6 6-6"/>
+      </svg>
+    </label>
+
+  <div class="side-top">
+    <div class="brand">
+      <div class="brand-mark">FG</div>
+      <div>
+        <div class="brand-text">Forge</div>
+        <div class="brand-sub">Offline model · disk knowledge</div>
+      </div>
+    </div>
+    <button type="button" class="btn-primary" id="btnNew">New conversation</button>
+  </div>
+  <div class="search-wrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+    <input type="search" id="chatSearch" placeholder="Filter chats…" />
+  </div>
+  <div class="chat-list" id="chatList">
+    <div class="section-label">History</div>
+  </div>
+  <div class="side-foot">
+    <div class="status-grid">
+      <div class="stat-card">
+        <div class="k">Main model</div>
+        <div class="v"><span class="dot" id="llmDot"></span><span id="llmLabel">GPU</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="k">Embedding</div>
+        <div class="v"><span class="dot" id="ragDot"></span><span id="ragLabel">RAM</span></div>
+      </div>
+    </div>
+    <div class="foot-note" id="chunkInfo">Knowledge not loaded yet</div>
+  </div>
+</aside>
+
+<main class="workspace">
+  <header class="topbar">
+    <h1 id="chatTitle">New conversation</h1>
+    <div class="top-actions">
+      <button type="button" class="btn-ghost" id="btnIngest">Index knowledge</button>
+      <button type="button" class="btn-ghost" id="btnExport">Export</button>
+      <button type="button" class="btn-ghost" id="btnDel">Delete</button>
+    </div>
+  </header>
+
+  <div class="scroll" id="scroll">
+    <div class="hero" id="hero">
+      <h2>What are you working on?</h2>
+      <p>Local uncensored model on your RTX 4060. Optional private knowledge base from your writeups, tools, and notes — all on disk.</p>
+      <div class="chips">
+        <button type="button" class="chip" data-q="Explain how feroxbuster recursive scanning works with examples">Feroxbuster recursion</button>
+        <button type="button" class="chip" data-q="Write a clean nmap service scan command for a /24 network">Nmap service scan</button>
+        <button type="button" class="chip" data-q="Summarize a practical web app recon checklist">Web recon checklist</button>
+        <button type="button" class="chip" data-q="Help me debug a Python asyncio race condition">Python asyncio</button>
+      </div>
+    </div>
+    <div class="thread" id="thread"></div>
+  </div>
+
+  <div class="dock">
+    <div class="dock-inner">
+      <div class="tools">
+        <label><input type="checkbox" id="useRag" checked /> Knowledge</label>
+        <label class="temp-label">Mode
+          <select id="presetSel">
+            <option value="general">General</option>
+            <option value="code">Code</option>
+            <option value="security">Security</option>
+          </select>
+        </label>
+        <label class="temp-label" title="Sampling temperature">Temp
+          <input type="range" id="tempRange" min="0.1" max="1.2" step="0.05" value="0.6" />
+          <span id="tempVal">0.60</span>
+        </label>
+        <button type="button" class="btn-ghost" id="btnRegen" style="padding:4px 8px;font-size:9px">Regenerate</button>
+        <span><span class="kbd">Enter</span> send</span>
+        <span><span class="kbd">Esc</span> stop</span>
+      </div>
+      <div class="composer" id="composer">
+        <textarea id="input" rows="1" placeholder="Message Forge…"></textarea>
+        <div class="composer-meta">
+          <span id="charHint">Ready</span>
+          <span>Shift+Enter newline</span>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn-send" id="btnSend">Send</button>
+          <button type="button" class="btn-stop" id="btnStop">Stop</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const hasMarked = typeof marked !== 'undefined';
+const hasPurify = typeof DOMPurify !== 'undefined';
+if (hasMarked) marked.setOptions({ breaks: true, gfm: true });
+
+const thread = document.getElementById('thread');
+const scrollEl = document.getElementById('scroll');
+const hero = document.getElementById('hero');
+const inputEl = document.getElementById('input');
+const btnSend = document.getElementById('btnSend');
+const btnStop = document.getElementById('btnStop');
+const useRag = document.getElementById('useRag');
+const chatList = document.getElementById('chatList');
+const chatTitle = document.getElementById('chatTitle');
+const chatSearch = document.getElementById('chatSearch');
+
+let history = [];
+let chatId = null;
+let busy = false;
+let abortCtrl = null;
+let allChats = [];
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function renderMd(text) {
+  try {
+    if (hasMarked && hasPurify) {
+      return DOMPurify.sanitize(marked.parse(text || ''));
+    }
+    if (window.__mdFallback) return window.__mdFallback(text || '');
+    return (text || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  } catch {
+    return (text || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+}
+function wireCopy(root) {
+  if (!root) return;
+  root.querySelectorAll('pre').forEach(pre => {
+    if (pre.querySelector('.copy-btn')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      const code = pre.querySelector('code');
+      const t = code ? code.innerText : pre.innerText;
+      try {
+        await navigator.clipboard.writeText(t);
+        btn.textContent = 'Copied';
+        setTimeout(() => btn.textContent = 'Copy', 1200);
+      } catch {
+        btn.textContent = 'Fail';
+      }
+    };
+    pre.style.position = 'relative';
+    pre.appendChild(btn);
+  });
+}
+
+function showHero(v) { hero.style.display = v ? 'block' : 'none'; }
+
+function setBusy(v) {
+  busy = v;
+  btnSend.classList.toggle('hide', v);
+  btnStop.classList.toggle('show', v);
+  btnSend.disabled = v;
+  const box = document.getElementById('composer');
+  if (box) box.classList.toggle('sending', v);
+  const hint = document.getElementById('charHint');
+  if (hint) hint.textContent = v ? 'Generating…' : 'Ready';
+}
+
+function addMsg(role, content, streaming) {
+  showHero(false);
+  const row = document.createElement('div');
+  row.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+  row.innerHTML = `
+    <div class="role">${role === 'user' ? 'You' : 'Assistant'}</div>
+    <div class="bubble"><div class="md"></div></div>
+    <div class="msg-foot"></div>`;
+  const el = row.querySelector('.md');
+  const foot = row.querySelector('.msg-foot');
+  if (role === 'assistant' && !streaming) { el.innerHTML = renderMd(content); wireCopy(el); }
+  else el.textContent = content;
+  thread.appendChild(row);
+  scrollEl.scrollTop = scrollEl.scrollHeight;
+  return { row, el, foot };
+}
+
+function paint() {
+  thread.innerHTML = '';
+  if (!history.length) { showHero(true); return; }
+  showHero(false);
+  history.forEach(m => addMsg(m.role, m.content, false));
+}
+
+async function health() {
+  try {
+    const j = await (await fetch('/api/health')).json();
+    const rag = j.rag || {};
+    document.getElementById('llmDot').className = 'dot' + (j.ok ? ' on' : '');
+    document.getElementById('llmLabel').textContent = j.ok ? 'GPU online' : 'Offline';
+    const embedOn = !!rag.model_loaded;
+    document.getElementById('ragDot').className = 'dot' + ((embedOn || rag.chunk_count > 0) ? ' on' : '');
+    document.getElementById('ragLabel').textContent = embedOn ? 'Loaded' : (rag.embed_present ? 'On disk' : 'Missing');
+    const parts = [];
+    parts.push((rag.chunk_count || 0) + ' chunks');
+    if (rag.embed_model) parts.push(String(rag.embed_model).split('/').pop());
+    document.getElementById('chunkInfo').textContent = parts.join(' · ');
+  } catch {
+    document.getElementById('llmDot').className = 'dot';
+    document.getElementById('llmLabel').textContent = 'Offline';
+  }
+}
+
+function renderList(filter = '') {
+  const q = filter.trim().toLowerCase();
+  chatList.innerHTML = '<div class="section-label">History</div>';
+  const items = allChats.filter(c => !q || (c.title || '').toLowerCase().includes(q));
+  if (!items.length) {
+    const empty = document.createElement('div');
+    empty.className = 'section-label';
+    empty.textContent = q ? 'No matches' : 'No chats yet';
+    chatList.appendChild(empty);
+    return;
+  }
+  items.forEach(c => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chat-item' + (c.id === chatId ? ' active' : '');
+    b.innerHTML = `<div class="title"></div><div class="meta"><span></span><span></span></div>`;
+    b.querySelector('.title').textContent = c.title || 'Untitled';
+    b.querySelector('.meta span:first-child').textContent = (c.message_count || 0) + ' msgs';
+    const d = (c.updated_at || '').slice(0, 10);
+    b.querySelector('.meta span:last-child').textContent = d;
+    b.onclick = () => openChat(c.id);
+    chatList.appendChild(b);
+  });
+}
+
+async function loadList() {
+  try {
+    const j = await (await fetch('/api/chats')).json();
+    allChats = j.chats || [];
+    renderList(chatSearch.value);
+  } catch {}
+}
+
+async function openChat(id) {
+  if (busy) return;
+  const r = await fetch('/api/chats/' + id);
+  if (!r.ok) return;
+  const j = await r.json();
+  chatId = j.id;
+  history = j.messages || [];
+  chatTitle.textContent = j.title || 'Chat';
+  paint();
+  renderList(chatSearch.value);
+}
+
+function newChat() {
+  if (busy && abortCtrl) abortCtrl.abort();
+  chatId = null;
+  history = [];
+  chatTitle.textContent = 'New conversation';
+  thread.innerHTML = '';
+  showHero(true);
+  loadList();
+  inputEl.focus();
+}
+
+function stopGen() {
+  if (abortCtrl) {
+    try { abortCtrl.abort(); } catch (_) {}
+  }
+  window.__regen = false;
+}
+
+async function send(textOverride) {
+  const text = (textOverride ?? inputEl.value).trim();
+  if (!text || busy) return;
+  if (!textOverride) inputEl.value = '';
+  const isRegen = !!window.__regen;
+  if (!isRegen) {
+    addMsg('user', text, false);
+    history.push({ role: 'user', content: text });
+  } else {
+    // show a temporary regenerating assistant bubble only
+    // leave prior user+assistant in history until success
+  }
+
+  const { row, el, foot } = addMsg('assistant', '', true);
+  if (isRegen) foot.innerHTML = '<span class="badge">Regenerating…</span>';
+  let full = '';
+  let usedRag = false;
+  abortCtrl = new AbortController();
+  const historyRef = history;
+  let errMsg = null;
+  setBusy(true);
+
+  try {
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: abortCtrl.signal,
+      body: JSON.stringify({
+        message: text,
+        history: history.slice(0, -1),
+        chat_id: chatId,
+        use_rag: useRag.checked,
+        temperature: parseFloat((document.getElementById('tempRange')||{}).value || 0.6),
+        preset: (document.getElementById('presetSel')||{}).value || 'general',
+        regenerate: !!window.__regen,
+        stream: true,
+        save: true,
+      }),
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const parts = buf.split('\n\n');
+      buf = parts.pop();
+      for (const part of parts) {
+        const line = part.trim();
+        if (!line.startsWith('data:')) continue;
+        let data;
+        try { data = JSON.parse(line.slice(5).trim()); } catch { continue; }
+        if (data.chat_id) chatId = data.chat_id;
+        if (data.token) {
+          full += data.token;
+          if (!window.__streamRaf) {
+            window.__streamRaf = requestAnimationFrame(() => {
+              window.__streamRaf = 0;
+              el.textContent = full;
+              const near = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight < 120;
+              if (near) scrollEl.scrollTop = scrollEl.scrollHeight;
+            });
+          }
+        }
+        if (data.done) usedRag = !!data.rag_used;
+        if (data.error) errMsg = data.error;
+      }
+    }
+    const myHist = history;
+    if (window.__streamRaf) { cancelAnimationFrame(window.__streamRaf); window.__streamRaf = 0; }
+    if (errMsg) {
+      el.textContent = 'Error: ' + errMsg;
+    } else {
+      el.innerHTML = renderMd(full); wireCopy(el);
+    }
+    if (usedRag && !errMsg) foot.innerHTML = '<span class="badge ok">Knowledge used</span>';
+    if (history === myHist && full.trim()) {
+      if (isRegen) {
+        // drop the temporary streaming row is already the new content in el
+        // replace last assistant in history, or append if none
+        if (myHist.length && myHist[myHist.length - 1].role === 'assistant') {
+          myHist[myHist.length - 1] = { role: 'assistant', content: full };
+        } else {
+          myHist.push({ role: 'assistant', content: full });
+        }
+        // remove the extra streaming assistant bubble duplicates by repainting
+        paint();
+      } else {
+        myHist.push({ role: 'assistant', content: full });
+      }
+    }
+    if (history === myHist && !isRegen && history.length <= 2) chatTitle.textContent = text.slice(0, 80);
+    window.__regen = false;
+    loadList();
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      if (window.__streamRaf) { cancelAnimationFrame(window.__streamRaf); window.__streamRaf = 0; }
+      window.__regen = false;
+      if (isRegen) {
+        // keep previous assistant; drop temp bubble
+        if (row && row.parentNode) row.remove();
+        toast('Regenerate cancelled — previous answer kept');
+      } else if (full.trim()) {
+        el.innerHTML = renderMd(full); wireCopy(el);
+        foot.innerHTML = '<span class="badge">Stopped</span>';
+        if (history === historyRef) history.push({ role: 'assistant', content: full });
+        loadList();
+      } else {
+        if (row && row.parentNode) row.remove();
+      }
+    } else {
+      window.__regen = false;
+      if (isRegen && row && row.parentNode) row.remove();
+      else el.textContent = 'Failed: ' + e.message;
+    }
+  } finally {
+    abortCtrl = null;
+    setBusy(false);
+    window.__regen = false;
+    inputEl.focus();
+  }
+}
+
+document.getElementById('btnNew').onclick = newChat;
+document.getElementById('btnStop').onclick = stopGen;
+document.getElementById('btnDel').onclick = async () => {
+  if (!chatId) return newChat();
+  if (!confirm('Delete this conversation from disk?')) return;
+  await fetch('/api/chats/' + chatId, { method: 'DELETE' });
+  toast('Chat deleted');
+  newChat();
+};
+document.getElementById('btnExport').onclick = () => {
+  if (!history.length) return toast('Nothing to export');
+  const blob = new Blob([JSON.stringify({ chatId, title: chatTitle.textContent, messages: history }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (chatId || 'chat') + '.json';
+  a.click();
+  toast('Exported');
+};
+document.getElementById('btnIngest').onclick = async () => {
+  const b = document.getElementById('btnIngest');
+  b.disabled = true;
+  b.textContent = 'Indexing…';
+  try {
+    const r = await fetch('/api/ingest?force=true', { method: 'POST' });
+    const j = await r.json();
+    if (r.ok) toast(`Indexed ${j.files} files · ${j.chunks} chunks`);
+    else toast(j.detail || j.error || 'Index failed');
+    health();
+  } catch (e) { toast(e.message); }
+  finally { b.disabled = false; b.textContent = 'Index knowledge'; }
+};
+btnSend.onclick = () => send();
+chatSearch.addEventListener('input', () => renderList(chatSearch.value));
+document.querySelectorAll('.chip').forEach(c => {
+  c.onclick = () => send(c.getAttribute('data-q'));
+});
+inputEl.addEventListener('input', () => {
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(Math.max(inputEl.scrollHeight, 48), 200) + 'px';
+  const hint = document.getElementById('charHint');
+  const n = inputEl.value.trim().length;
+  if (hint && !busy) hint.textContent = n ? (n + ' chars') : 'Ready';
+});
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  if (e.key === 'Escape') stopGen();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') stopGen();
+});
+
+const tempRange = document.getElementById('tempRange');
+const tempVal = document.getElementById('tempVal');
+if (tempRange && tempVal) {
+  tempRange.addEventListener('input', () => {
+    tempVal.textContent = parseFloat(tempRange.value).toFixed(2);
+  });
+}
+document.getElementById('btnRegen')?.addEventListener('click', () => {
+  if (busy) return;
+  if (!history.length) return toast('Nothing to regenerate');
+  const lastUser = [...history].reverse().find(m => m.role === 'user');
+  if (!lastUser) return toast('No user message');
+  window.__regen = true;
+  // keep UI history intact until successful regen completes
+  send(lastUser.content);
+});
+const presetSel = document.getElementById('presetSel');
+const presetDefaults = { general: 0.6, code: 0.35, security: 0.45 };
+if (presetSel && tempRange && tempVal) {
+  presetSel.addEventListener('change', () => {
+    const t = presetDefaults[presetSel.value] ?? 0.6;
+    tempRange.value = t;
+    tempVal.textContent = t.toFixed(2);
+  });
+}
+health();
+loadList();
+setInterval(health, 12000);
+inputEl.focus();
+</script>
+</body>
+</html>
