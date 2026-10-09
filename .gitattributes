@@ -1,0 +1,12 @@
+* text=auto eol=lf
+*.fish text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.html text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.svg text eol=lf
+*.png binary
+*.jpg binary
+*.gguf binary
+*.onnx binary

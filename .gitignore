@@ -1,0 +1,59 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local secrets
+.env
+.env.local
+*.pem
+*.key
+
+# Runtime state (never publish)
+chroma/
+data/
+chats/
+*.db
+*.db-journal
+*.sqlite
+active_index.json
+
+# User knowledge content (structure kept via .gitkeep only)
+knowledge/**/*.md
+knowledge/**/*.txt
+knowledge/**/*.json
+knowledge/**/*.jsonl
+knowledge/**/*.csv
+knowledge/**/*.log
+knowledge/**/*.html
+!knowledge/**/.gitkeep
+
+# Models and caches
+models/
+*.gguf
+*.onnx
+.cache/
+huggingface/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Logs / temp
+*.log
+tmp/
+.temp/
+dist/
+build/
